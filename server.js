@@ -24,7 +24,6 @@ app.get('/', (req,res,next) => {
   res.render(path.join(__dirname, './index.html'),{user: req.session.user})
 });
 app.get('/github/callback/', (req,res,next) => {
-  console.log(req.query.code)
   axios.post('https://github.com/login/oauth/access_token', {
     client_id: process.env.clientId,
     client_secret: process.env.clientSecret,
@@ -33,7 +32,6 @@ app.get('/github/callback/', (req,res,next) => {
   .then(response => response.data)
   .then(data => {
     const { access_token } = qs.parse(data)
-    console.log('access token: '+access_token)
     return axios.get('https://api.github.com/user', {
       headers: {
         authorization: `token ${access_token}`
@@ -42,9 +40,7 @@ app.get('/github/callback/', (req,res,next) => {
   })
   .then(response => response.data)
   .then(githubUser => {
-    console.log(githubUser)
     req.session.user = githubUser;
-    console.log(req.session)
     res.redirect('/');
   })
   .catch(next);
