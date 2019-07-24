@@ -16,42 +16,45 @@ const app = express();
 app.use(session({
   secret: process.env.SessionSecret,
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: false
 }));
 app.engine('html', ejs.renderFile);
 
 app.get('/', (req,res,next) => {
-  res.render(path.join(__dirname, './index.html'),{user: undefined})
-});
-app.get('/login', (req,res,next) => {
-  const URL = `https://github.com/login/oauth/authorize?client_id=${process.env.clientId}`;
-  res.redirect(URL)
+  res.render(path.join(__dirname, './index.html'),{user: req.session.user})
 });
 app.get('/github/callback/', (req,res,next) => {
   console.log(req.query.code)
   axios.post('https://github.com/login/oauth/access_token', {
-    clientId: process.env.clientId,
-    clientSecret: process.env.clientSecret,
+    client_id: process.env.clientId,
+    client_secret: process.env.clientSecret,
     code: req.query.code
   })
   .then(response => response.data)
   .then(data => {
     const { access_token } = qs.parse(data)
-    return axios.get('/https://api.github.com/user', {
+    console.log('access token: '+access_token)
+    return axios.get('https://api.github.com/user', {
       headers: {
-        Authorization: `token ${access_token}`
+        authorization: `token ${access_token}`
       }
     })
   })
   .then(response => response.data)
   .then(githubUser => {
+    console.log(githubUser)
     req.session.user = githubUser;
+    console.log(req.session)
     res.redirect('/');
   })
   .catch(next);
 });
+app.get('/login', (req,res,next) => {
+  const URL = `https://github.com/login/oauth/authorize?client_id=${process.env.clientId}`;
+  res.redirect(URL)
+});
 
 
-const PORT = process.env.PORT || '3001'
+const PORT = process.env.PORT || '3000'
 console.log(`App listening on port: ${PORT}`)
 app.listen(PORT)
